@@ -1,0 +1,96 @@
+alias physicalSP S0 ;
+physicalSP = [PTBR+(2*(SP/512))]*512 +(SP%512);
+alias sysCallNo S1 ;
+sysCallNo = [physicalSP - 1];
+if (sysCallNo == 2) then
+	alias filename S2 ;
+	filename = [physicalSP - 3];
+	alias i S3;
+	i = 0;
+	alias fat_index S4;
+	while (i<512) do
+		if (filename == [FAT+i]) then
+			fat_index = i;
+			break ;
+		endif;
+		i = i+8;
+	endwhile;
+	if (i==512) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	alias oft_index S5 ;
+	i = 0;
+	while (i<128) do
+		if ([FILE_TABLE+i+0]==fat_index) then
+			oft_index = i;
+			break ;
+		endif;
+		i = i+2;
+	endwhile;
+	if (i==128) then
+		i = 0;
+		while (i<128) do
+			if ([FILE_TABLE+i+0]==-1) then
+				oft_index = i;
+				break;
+			endif;
+			i = i+2 ;
+		endwhile;
+		if (i == 128) then
+			[physicalSP-2] = -1;
+			ireturn ;
+		endif;
+	endif;
+	alias cur_pcb S6;
+	alias pt_index S7;
+	alias pos S8;
+	cur_pcb = READY_LIST+32*((PTBR-1024)/8);
+	i=0;
+	while(i<8) do
+		pos = cur_pcb+15+2*i;
+		if ([pos]==-1) then
+			pt_index = i;
+			break;
+		endif;
+		i = i+1;
+	endwhile;
+	if (i==8) then
+		[physicalSP-2]=-1;
+		ireturn ;
+	endif;
+	[pos]=oft_index;
+	[pos+1]=0;
+	pos = FILE_TABLE+oft_index;
+	[pos]=fat_index;
+	[pos+1] = [pos+1] + 1;
+	[physicalSP-2]=pt_index;
+	ireturn ;
+endif;
+if (sysCallNo == 3) then
+	alias fd S2;
+	fd = [physicalSP-3];
+	if ((fd<0)||(fd>7)) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	alias cur_pcb S6;
+	alias pos S8;
+	cur_pcb = READY_LIST+32*([PTBR-1024]/8);
+	pos = cur_pcb+15+2*fd;
+	if ([pos] == -1) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	alias oft_index S5;
+	oft_index = [pos];
+	[pos] = -1;
+	[pos+1] = -1;
+	pos = FILE_TABLE+oft_index;
+	[pos+1] = [pos+1]-1;
+	if ([pos+1]==0) then
+		[pos] = -1;
+	endif;
+	[physicalSP-2]=0;
+	ireturn;
+endif;

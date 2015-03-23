@@ -1,0 +1,92 @@
+alias physicalSP S0;
+physicalSP = [PTBR+((SP/512)*2)]*512 + (SP%512);
+alias sysCallNo S1;
+sysCallNo = [physicalSP-1];
+if (sysCallNo == 9) then
+	//print "	Enter exec";
+	alias filename S2;
+	filename = [physicalSP-3];
+	//print filename;
+	alias i S3;
+	alias bb S4;
+	i = 0;
+	while (i<512) do
+		if ([FAT+i]==filename) then
+            bb = [FAT+i+2];
+			break ;
+		endif;
+		i = i+8;
+	endwhile;
+	//print "In exec1";
+	if (i>=512) then
+		[physicalSP-2]=-1;
+		print "File not found";
+		ireturn;
+	endif;
+	load (1, bb);
+	//print "In exec2";
+	i = PTBR;
+    alias j S5;
+    j =0 ;
+    while (j<3) do
+        if (([i+1]=="01")||([i+1]=="11")) then
+			[1280+[i]]=[1280+[i]]-1;
+		else
+			if ([i]>=448) then
+				[3072+[i]] = [3072+[i]]-1;
+				store(6, 20);
+			endif;
+        endif;
+        [i] = [512+j];
+        [i+1] = "00";
+		i = i+2;
+		j = j+1;
+	endwhile;
+	[i+1] = "01";
+    //print "In exec3";
+    alias cur_pcb S6;
+	cur_pcb = READY_LIST+((PTBR-PAGE_TABLE)/8)*32;
+    i = 15;
+    alias oft_index S7;
+    while (i<30) do
+		oft_index = [cur_pcb+i];
+		if (oft_index != -1) then
+			[oft_index+1] = [oft_index+1]-1;
+			if ([oft_index+1]==0) then
+				[oft_index] = -1;
+			endif;
+		endif;
+		[cur_pcb+i]=-1;
+		[cur_pcb+i+1]=0;
+		i = i+2;
+	endwhile;
+	SP = 3*512;
+	SP = SP+1;
+	physicalSP = [PTBR+((SP/512)*2)]*512 + (SP%512);	
+	[physicalSP]=0;
+	[physicalSP-2]=0;
+	//print "	Exit exec";
+	ireturn;
+endif;
+
+if (sysCallNo == 11) then
+	if ((PTBR>1280) || (PTBR<PAGE_TABLE)) then
+		[physicalSP-1] = -1;
+		ireturn;
+	endif;
+	[physicalSP-2] = (PTBR-PAGE_TABLE)/8;
+	ireturn;
+endif;
+
+if (sysCallNo == 12) then
+	alias cur_pcb S10;
+	cur_pcb = (READY_LIST+((PTBR-PAGE_TABLE)/8)*32);
+	alias ppid S11;
+	ppid = [cur_pcb+31];
+	if ((ppid<0)||(ppid>31)) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	[physicalSP-2] = ppid;
+	ireturn;
+endif;

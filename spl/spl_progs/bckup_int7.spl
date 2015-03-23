@@ -1,0 +1,159 @@
+alias physicalSP S0 ;
+physicalSP = [PTBR+(2*(SP/512))]*512 + (SP%512) ;
+alias sysCallNo S1 ;
+sysCallNo = [physicalSP - 1] ;   
+if (sysCallNo == 10) then
+	print "Enter exit";
+	alias w_pid_cur S10;
+	alias cur_pcb S4;
+	alias i S3;
+	cur_pcb = READY_LIST+((PTBR-PAGE_TABLE)/8)*32;
+	w_pid_cur = 100+[cur_pcb];
+	i = READY_LIST;
+	while (i<2560) do
+			if ([i+1]==w_pid_cur) then
+				[i+1] = 1;
+			endif;
+			i = i+32;
+	endwhile;
+	alias rdy_pss S2;
+	rdy_pss = 0;
+	i = READY_LIST;
+	while (i<2560) do
+		if ([i+1] == 1) then
+			rdy_pss = rdy_pss + 1;
+		endif;
+		i = i+32;
+	endwhile;
+	if (rdy_pss == 0) then
+		halt;
+	endif;
+	i = READY_LIST;
+	while (i < 2048) do
+		if ([i+1] == 2) then
+			cur_pcb = i;
+			break;
+		endif;
+		i = i+32;
+	endwhile;
+    i = 15;
+    alias oft_index S5;
+    while (i<30) do
+		oft_index = [cur_pcb+i];
+		if (oft_index != -1) then
+			[oft_index+1] = [oft_index+1]-1;
+			if ([oft_index+1]==0) then
+				[oft_index] = -1;
+			endif;
+		endif;
+		[cur_pcb+i]=-1;
+		[cur_pcb+i+1]=0;
+		i = i+2;
+	endwhile;
+	[cur_pcb+1] = 0;
+	i=0;
+	alias phy_pg_no S6;
+	while (i<8) do
+		phy_pg_no = [PTBR + i];
+		if (phy_pg_no != -1) then
+			[1280+phy_pg_no] = 0;
+			[PTBR+i] = -1;
+			[PTBR+i+1] = "00";
+		else
+			break;
+		endif;
+		i = i+2;
+	endwhile;
+	alias new_pcb S7 ;
+	alias mod S8 ;
+	mod = READY_LIST + 32*32 ;
+	mod = mod-1 ;
+	new_pcb = cur_pcb+32;
+	while ([new_pcb+1] != 1) do
+		if (new_pcb > mod) then
+			new_pcb = READY_LIST ;
+		else 
+			new_pcb = new_pcb + 32 ;
+		endif ;
+	endwhile ;
+	[new_pcb + 1] = 2 ;
+	BP = [new_pcb + 2] ;
+	SP = [new_pcb + 3] ;
+	PTBR = [new_pcb + 5] ;
+	PTLR = [new_pcb + 6] ;
+	R0 = [new_pcb + 7] ;
+	R1 = [new_pcb + 8] ;
+	R2 = [new_pcb + 9] ;
+	R3 = [new_pcb + 10] ;
+	R4 = [new_pcb + 11] ;
+	R5 = [new_pcb + 12] ;
+	R6 = [new_pcb + 13] ;
+	R7 = [new_pcb + 14] ;
+	alias p_SP S9 ;
+	SP = SP+1 ;
+	p_SP = ([PTBR+(SP/512)*2]*512 + (SP%512)) ;
+	[p_SP] = [new_pcb + 4] ;
+	print "exit exit";
+	ireturn;
+endif;
+if (sysCallNo == 13) then
+	alias WaitingPID S2;
+	WaitingPID = [physicalSP-3];
+	alias WaitingPCB S3;
+	WaitingPCB = READY_LIST + WaitingPID*32;
+	if (([WaitingPCB + 1] == 0) || ([WaitingPCB+1] == 2)) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	alias cur_pcb S4;
+	cur_pcb = READY_LIST + ((PTBR-PAGE_TABLE)/8)*32;
+	[cur_pcb+1] = 100+WaitingPID;
+	alias new_pcb S5 ;
+	alias mod S6 ;
+	mod = READY_LIST + 32*32 ;
+	mod = mod-1 ;
+	new_pcb = cur_pcb+32;
+	while ([new_pcb+1] != 1) do
+		if (new_pcb > mod) then
+			new_pcb = READY_LIST ;
+		else 
+			new_pcb = new_pcb + 32 ;
+		endif ;
+	endwhile ;
+	[new_pcb + 1] = 2 ;
+	BP = [new_pcb + 2] ;
+	SP = [new_pcb + 3] ;
+	PTBR = [new_pcb + 5] ;
+	PTLR = 4 ;
+	R0 = [new_pcb + 7] ;
+	R1 = [new_pcb + 8] ;
+	R2 = [new_pcb + 9] ;
+	R3 = [new_pcb + 10] ;
+	R4 = [new_pcb + 11] ;
+	R5 = [new_pcb + 12] ;
+	R6 = [new_pcb + 13] ;
+	R7 = [new_pcb + 14] ;
+	alias p_SP S9 ;
+	SP = SP+1 ;
+	p_SP = ([PTBR+(SP/512)*2]*512 + (SP%512)) ;
+	[p_SP] = [new_pcb + 4] ;
+    [physicalSP-2] = 0;
+    ireturn;
+endif;
+
+if (sysCallNo == 14) then
+	alias i S3;
+	alias w_pid_cur S4;
+	w_pid_cur = 100+(PTBR-PAGE_TABLE)/8;
+	i = READY_LIST;
+	while (i<2560) do
+			if ([i+1]==w_pid_cur) then
+				[i+1] = 1;
+				//print [i];
+			endif;
+			i = i+32;
+	endwhile;
+	[physicalSP-2] = 0;
+	ireturn; 
+endif;
+ireturn ;

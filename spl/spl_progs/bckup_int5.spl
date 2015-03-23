@@ -1,0 +1,110 @@
+alias physicalSP S0 ;
+physicalSP = [PTBR+(2*(SP/512))]*512 + (SP%512) ;
+alias sysCallNo S1 ;
+alias i S2;
+alias curpcb S11;
+curpcb = READY_LIST+((PTBR-PAGE_TABLE)/8)*32;
+sysCallNo = [physicalSP - 1];
+if (sysCallNo == 8) then
+    print " Enter fork";
+	alias childpcb S3;
+	i = READY_LIST + 1;
+	while(i<FAT) do
+		if ([i]==0) then
+			childpcb = i-1;
+			break;
+		endif;
+		i = i+32;
+	endwhile;
+	if (i >= FAT) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	[childpcb] = (childpcb-READY_LIST)/32;
+	[childpcb+31] = (PTBR-PAGE_TABLE)/8;
+    i = 0;
+	alias count S4;
+	count = 0;
+    while (i<8) do
+		if ([PTBR+i] != -1) then
+			count = count+1;
+		endif;
+		i = i+2;
+	endwhile;
+	alias freepgs S5;
+	freepgs = 0;
+	i = 1280;
+	while (i<1344) do
+		if ([i]==0) then
+			freepgs = freepgs+1;
+		endif;
+		i = i+1;
+	endwhile;
+	if (freepgs<count) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	print "infork";
+	i = 1280;
+	alias j S6;
+	alias k S7;
+	alias par_pgadd S8;
+	j = 0;
+	alias freepg S5;
+    alias childptbr S9 ;
+    alias m S10;
+    m = 0;
+    childptbr = PAGE_TABLE+8*[childpcb];
+	while (j<8) do
+		if ([PTBR+j] != -1) then
+			while ((i<1344)&&([i] != 0)) do
+				i = i+1;
+			endwhile;
+			freepg = i-1280;
+			par_pgadd = [PTBR+j]*512;
+			[childptbr+m] = freepg;
+			[childptbr+m+1] = "01";  
+			m = m+2;
+			[i] = 1;
+			i = i+1;
+			k = 0;
+			freepg = freepg*512;
+			while (k<512) do
+				[freepg+k] = [par_pgadd+k];
+				k = k+1;
+			endwhile;
+		endif;
+		j = j+2;
+	endwhile;
+    [childpcb+5]=childptbr;
+    [childpcb+4]=[physicalSP];
+	[childpcb+3]=SP-1;
+    [childpcb+2]=BP;
+    [childpcb+6]=PTLR;
+    [childpcb+7]=R0;
+    [childpcb+8]=R1;
+    [childpcb+9]=R2;
+    [childpcb+10]=R3;
+    [childpcb+11]=R4;
+    [childpcb+12]=R5;
+    [childpcb+13]=R6;
+    [childpcb+14]=R7;
+    i=childpcb+15;
+    j=curpcb+15;
+    while (i<curpcb+30) do
+		[i]=[j];
+		if ([i] != -1) then
+			k = FILE_TABLE+[i]+1;
+			[k]=[k]+1;  
+			i = i+2;
+			j = j+2;
+		endif;
+	endwhile;
+	[childpcb+1]=1;
+	[physicalSP-2]=[childpcb];
+    alias child_ph_SP  S10;
+    child_ph_SP = [childptbr+(2*((SP-1)/512))]*512 + ((SP-1)%512);
+    [child_ph_SP-1]=-2;
+    print " Exit fork";
+    ireturn;
+endif;          

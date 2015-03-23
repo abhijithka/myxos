@@ -1,0 +1,67 @@
+alias physicalSP S0 ;
+physicalSP = [PTBR+(2*(SP/512))]*512 + (SP%512) ;
+alias sysCallNo S1 ;
+sysCallNo = [physicalSP - 1] ;   
+alias fd S2;
+alias word S3;
+word = [physicalSP-3];
+fd = [physicalSP-4];
+if (sysCallNo == 5) then
+	if ((fd<0)||(fd>7)) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	alias cur_pcb S4;
+	cur_pcb = READY_LIST+32*((PTBR-1024)/8);
+	alias pos S5;
+	pos = cur_pcb + 15 +2*fd;
+	alias oft_index S6;
+	oft_index = [pos];
+	if (oft_index==-1) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias lsk S7;
+	lsk = [pos+1];
+	if ((lsk/512)>=256) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias fat_index S8;
+	fat_index = [FILE_TABLE+oft_index];
+	alias bb S9;
+	bb = [FAT+fat_index+2];
+	load (1, bb);
+	alias b_no S10;
+	alias i S11;
+	b_no = [512 + lsk/512];
+	i = 0;
+	if (b_no == -1) then
+		while (i<448) do
+			if ([DISK_LIST + i]==0) then
+				break;
+			endif;
+			i = i+1;
+		endwhile;
+		if (i==448) then
+			[physicalSP-2] = -1;
+			ireturn;
+		endif;
+		b_no = i ;
+		b_no = i;
+		[DISK_LIST+b_no] = 1;
+		[512+lsk/512] = b_no;
+		store (1, bb);
+		[FAT+fat_index+1] = [FAT+fat_index+1]+512;
+		store (5, 19);
+		store (6, 20);
+	endif;
+	load (1, b_no);
+	pos = lsk%512;
+	[512+pos] = word;
+	store (1, b_no);
+	pos = cur_pcb + (15+2*fd)+1;
+	[pos] = [pos]+1;
+	[physicalSP-2] = 0;
+	ireturn;
+endif;

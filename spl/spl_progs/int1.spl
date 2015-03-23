@@ -1,0 +1,113 @@
+alias physicalSP S0 ;
+physicalSP = [PTBR+(2*(SP/512))]*512 + (SP%512) ;
+alias sysCallNo S1 ;
+sysCallNo = [physicalSP - 1] ;
+alias filename S2 ;
+filename = [physicalSP - 3] ;
+alias i S3 ;
+i = 0 ;
+if (sysCallNo == 1) then
+	alias new_bb S4 ;
+	while (i<448) do
+		if ([DISK_LIST + i] == 0) then
+			new_bb = i ;
+			break ;
+		endif ;
+		i = i+1 ;
+	endwhile ;
+	if (i==448) then
+		[physicalSP - 2] = -1 ;
+		ireturn ;
+	endif ;
+	i = 0 ;
+	while (i<512) do
+		if ([FAT + i] == filename) then 
+			[physicalSP - 2] = 0 ;
+			ireturn ;
+		endif ;
+		i = i+8 ;
+	endwhile ;
+	i = 0;
+	while (i<512) do
+		if ([FAT + i + 2] == -1) then
+			[FAT + i] = filename ;
+			[FAT + i + 1] = 0 ;
+			[FAT+i+2] = new_bb ;
+			break ;
+		endif ;
+		i = i+8 ;
+	endwhile ;
+	if (i==512) then
+		[physicalSP-2] = -1 ;
+		ireturn ;
+	endif ;	
+	load (1, new_bb) ;
+	i=0 ;
+	while (i<512) do
+		[512+i] = -1 ;
+		i = i+1 ;
+	endwhile ;
+	store (1, new_bb) ;
+	[DISK_LIST + new_bb] = 1 ;
+	store (5,19) ;
+	store (6,20) ;
+	[physicalSP-2] = 0 ;
+	ireturn ;
+endif ;	
+if (sysCallNo == 4) then
+	alias fat_index S4;
+	while (i<512) do
+		if ([FAT+i] == filename) then
+			fat_index = i;
+			break;
+		endif;
+		i = i+8;
+	endwhile;
+	if (i==512) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	i = 0;
+	while (i<128) do
+		if ([FILE_TABLE+i]==fat_index) then
+			[physicalSP-2] = -1;
+			ireturn;
+		endif;
+		i = i+2;
+	endwhile;
+	alias bb S5;
+	bb = [FAT+fat_index+2];  
+	i = 0;
+	alias j S6;
+	alias dblock S7;
+	while (i<256) do
+		load (1, bb);
+		dblock = [512+i];
+		if (dblock==-1) then
+			break;
+		endif;
+		j = 0;
+		load (1, dblock);
+		while (j<512) do
+			[512+j] = "";
+			j = j+1;
+		endwhile;
+		store (1, dblock);
+		[DISK_LIST+dblock] = 0;
+		i = i+1;
+	endwhile;
+	[FAT+fat_index] = -1;
+	[FAT+fat_index+2] = -1; 
+	load (1, bb);
+	i = 0;
+	while (i<512) do
+		[512+i] = "";
+		i = i+1;
+	endwhile;
+	store (1, bb);
+	[DISK_LIST+bb] = 0;
+	store (5, 19);
+	store (6, 20);
+	[physicalSP-2]=0;
+	ireturn;
+endif;

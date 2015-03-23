@@ -1,0 +1,76 @@
+alias physicalSP S0 ;
+physicalSP = [PTBR+(2*(SP/512))]*512 + (SP%512) ;
+alias sysCallNo S1 ;
+sysCallNo = [physicalSP - 1] ;   
+alias fd S2;
+fd = [physicalSP-4];
+if (sysCallNo==6) then
+	alias newlsk S3;
+	newlsk = [physicalSP-3];
+	if ((fd<0)||(fd>7)) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias cur_pcb S4;
+	cur_pcb = READY_LIST+32*((PTBR-1024)/8);
+	alias oft_index S5;
+	alias pp_index S6;
+	pp_index = cur_pcb + 15+2*fd;
+	oft_index = [pp_index];
+	if (oft_index==-1) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias fat_index S7;
+	fat_index = [FILE_TABLE+oft_index];
+	alias fl_size S8;
+	fl_size = [FAT+fat_index+1];
+	if ((newlsk>fl_size)||(newlsk<0)) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	[pp_index+1] = newlsk;
+	[physicalSP-2]=0;
+	ireturn;
+endif;					
+
+if (sysCallNo==7) then
+	if ((fd<0)||(fd>7)) then
+		[physicalSP-2] = -1;
+		ireturn;
+	endif;
+	alias cur_pcb S4;
+	cur_pcb = READY_LIST+32*((PTBR-1024)/8);
+	alias oft_index S5;
+	alias pp_index S6;
+	pp_index = cur_pcb + 15+2*fd;
+	oft_index = [pp_index];
+	if (oft_index==-1) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias lsk S3;
+	lsk = [pp_index+1];
+	alias fat_index S7;
+	fat_index = [FILE_TABLE+oft_index];
+	if (fat_index==-1) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias bb S8;
+	bb = [FAT+fat_index+2];
+	load(1, bb);
+	alias fl_size S9;
+	fl_size = [FAT+fat_index+1];
+	if ((lsk>=fl_size)||(lsk<0)) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias bl_no S10;
+	bl_no = [512+(lsk/512)];
+	load (1, bl_no);
+	[physicalSP-3]=[512+(lsk%512)];
+	[pp_index+1] = [pp_index+1]+1;
+	[physicalSP-2]=0;
+	ireturn;
+endif;

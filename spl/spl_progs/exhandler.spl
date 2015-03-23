@@ -1,0 +1,115 @@
+//print "Enter exhandler";
+alias Cause S0;
+alias Vpagenum S1;
+alias Ip_addr S2;
+alias i S3;
+alias j S4;
+alias k S5;
+alias victim_pg S6;
+alias free_pg S7;
+alias phy_pg_no	S8;
+alias physicalSP S9;
+
+Cause = EFR%10;
+Vpagenum = (EFR/10)%100;
+Ip_addr = EFR/1000;
+if (Cause != 0) then
+	if (Cause == 1) then
+		print "Illegal Instruction";
+	endif;
+	if (Cause == 2) then
+		print "Illegal Memory Access";
+	endif;
+	if (Cause == 3) then
+		print "Arithmetic Exception";
+	endif;
+	if (Cause == 4) then
+		print "Illegal Operands";
+	endif;
+	inline "JMP 11776";
+else
+    if ([PTBR+Vpagenum*2]==-1) then
+		//print "Here";
+		inline "JMP 11776";
+    endif;
+	i = 1280;
+	//print "In else";
+	while (i<1344) do
+		if ([i] == 0) then
+			break;
+		endif;
+		i = i+1;
+	endwhile;
+	if (i < 1344) then
+		free_pg = i-1280;
+		[i] = [i]+1;
+	endif;
+	if (i >= 1344) then
+		print "Page replaced";
+		j = PTBR;
+		k = 1;
+		while (1) do
+			if (k == 4) then
+				k = 1;
+				j = j+2;
+				continue;
+			endif;
+			if  ([1280+[j]]>1) then
+                k = k+1;
+                j = j+2;
+                continue;
+			endif;
+			if (([j+1]=="00")||([j+1]=="01")) then
+				break;
+			endif;
+			if ([j+1]=="10") then
+				[j+1] = "00";
+			endif;
+			if ([j+1]=="11") then
+				[j+1] = "01";
+			endif;
+			k = k+1;
+			j = j+2;
+			if (j>=1280) then
+				j = PAGE_TABLE;
+				k = 1;
+			endif;
+		endwhile;
+		victim_pg = j;
+		k = 448;
+		while (k<512) do
+			if ([3072+k]==0) then
+				break;
+			endif;
+			k = k+1;
+		endwhile;
+		if (k == 512) then
+			inline "JMP 11776";
+		endif;
+		store([victim_pg], k);
+		[3072+k]  = [3072+k]+1;
+		free_pg = [victim_pg];
+		[victim_pg] = k;
+		[victim_pg+1] = "00";
+	endif;
+	j = PTBR+Vpagenum*2;
+	phy_pg_no = [j];
+	if (([j+1]=="10")||([j+1]=="00")) then
+		if ((phy_pg_no>20)&&(phy_pg_no<448)) then
+			load(free_pg, phy_pg_no);
+			//print "Ivide ethi";
+		endif;
+		if ((phy_pg_no>=448)&&(phy_pg_no<512))  then
+			load (free_pg, phy_pg_no);
+			[3072+phy_pg_no]=[3072+phy_pg_no]-1;
+		endif;
+	endif;
+	[j]=free_pg;
+	[j+1]="11";
+	SP = SP+1;
+	physicalSP = [PTBR+((SP/512)*2)]*512 + (SP%512);
+	[physicalSP] = Ip_addr;
+	//print "Exit exhandler";
+	ireturn;
+endif;
+

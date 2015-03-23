@@ -1,0 +1,70 @@
+load --os ../spl/spl_progs/os_startup.xsm
+load --exhandler ../spl/spl_progs/exhandler.xsm
+load --int=timer ../spl/spl_progs/timer.xsm
+load --int=1 ../spl/spl_progs/int1.xsm
+load --int=2 ../spl/spl_progs/int2.xsm
+load --int=3 ../spl/spl_progs/int3.xsm
+load --int=4 ../spl/spl_progs/int4.xsm
+load --int=5 ../spl/spl_progs/int5.xsm
+load --int=6 ../spl/spl_progs/int6.xsm
+load --int=7 ../spl/spl_progs/int7.xsm
+load --init ../apl/apl_progs/shell.xsm
+load --exec ../apl/apl_progs/p1.xsm
+load --exec ../apl/apl_progs/p2.xsm
+load --exec ../apl/apl_progs/p3.xsm
+load --exec ../apl/apl_progs/p4.xsm
+load --exec ../apl/apl_progs/p5.xsm
+load --exec ../apl/apl_progs/p6.xsm
+load --exec ../apl/apl_progs/p7.xsm
+load --exec ../apl/apl_progs/p8.xsm
+load --exec ../apl/apl_progs/p9.xsm
+load --exec ../apl/apl_progs/p10.xsm
+load --exec ../apl/apl_progs/p11.xsm
+load --exec ../apl/apl_progs/p12.xsm
+load --exec ../apl/apl_progs/p13.xsm
+load --exec ../apl/apl_progs/p14.xsm
+load --exec ../apl/apl_progs/p15.xsm
+load --exec ../apl/apl_progs/p16.xsm
+load --exec ../apl/apl_progs/p17.xsm
+load --exec ../apl/apl_progs/p18.xsm
+load --exec ../apl/apl_progs/p19.xsm
+load --exec ../apl/apl_progs/p20.xsm
+load --exec ../apl/apl_progs/p21.xsm
+load --exec ../apl/apl_progs/p22.xsm
+
+
+load --exec ../apl/apl_progs/e.xsm
+load --exec ../apl/apl_progs/o.xsm
+load --exec ../apl/apl_progs/n.xsm
+load --init ../apl/apl_progs/signal.xsm
+
+load --init ../apl/apl_progs/shell.xsm
+load --exec ../apl/apl_progs/odd.xsm
+load --exec ../apl/apl_progs/even.xsm
+
+load --init ../apl/apl_progs/wait_signal.xsm
+
+load --init ../apl/apl_progs/shell.xsm
+load --exec ../apl/apl_progs/odd.xsm
+load --exec ../apl/apl_progs/even.xsm
+
+load --init ../apl/apl_progs/forknexec.xsm
+load --init ../apl/apl_progs/sample.xsm
+load --exec ../apl/apl_progs/sample.xsm
+
+load --exec ../apl/apl_progs/even.xsm
+load --exec ../apl/apl_progs/odd.xsm
+
+
+
+
+load --init ../apl/apl_progs/wait.xsm
+load --exec ../apl/apl_progs/ev.xsm
+load --exec ../apl/apl_progs/od.xsm
+load --exec ../apl/apl_progs/n.xsm
+
+	
+	else
+		while (childpid != -1) do
+			print(childpid);
+		endwhile;
